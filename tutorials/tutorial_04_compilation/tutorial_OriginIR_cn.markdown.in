@@ -1,0 +1,472 @@
+OriginIR  {#tutorial_quantum_program_of_content_OriginIR}
+=========================================================
+
+[TOC]
+
+@prev_tutorial{intro}
+@next_tutorial{tutorial_py_root}
+
+-------------------------------------------------------------------------------------------------------------------------------
+
+### 概述
+
+OriginIR 是基于 %QPanda3 的量子程序中间表示，对 %QPanda3 各种特性的支持有着非常重要的作用。OriginIR 主要内容包括量子比特、经典寄存器、量子逻辑门、转置共轭操作、添加控制比特操作、QIf、QWhile、经典表达式。
+
+@note
+目前，QPanda3的量子程序转译接口的执行效率要高于QPanda2中对应的接口，并且QPanda3支持注释解析。
+
+
+### 量子比特
+
+OriginIR 使用 `QINIT` 申请量子比特，其格式为 `QINIT` 后跟“空格 + 经典寄存器总数”。示例如下：
+@code{.c}
+    QINIT 6
+@endcode
+
+需要注意的是，除注释之外，`QINIT` 必须出现在 OriginIR 程序的第一行。在使用量子比特时，OriginIR 使用 `q[i]` 表示某个具体的量子比特，此处 `i` 为量子比特的编号，`i` 可为无符号数字型常量，也可为变量，同时也可使用 `c[i]` 组成的表达式代替。示例如下：
+@code{.c}
+    q[1], q[c[0]], q[c[1] + c[2] + c[3]]
+@endcode
+
+
+### 经典寄存器
+OriginIR 使用 `CREG` 申请经典寄存器，其格式为 `CREG` 后跟“空格+经典寄存器总数”。示例如下：
+@code{.c}
+    CREG 6
+@endcode
+
+在使用经典寄存器时，OriginIR 使用 `c[i]` 表示某个具体的经典寄存器，`i` 为经典寄存器编号，此处 `i` 必须为无符号数字型常量。示例如下：
+@code{.c}
+    c[1]
+@endcode
+
+
+### 量子逻辑门
+OriginIR 把量子逻辑门分为以下几个种类：
+
+- 单门无参数型：其关键字包括 `H`、`T`、`S`、`X`、`Y`、`Z`、`X1`、`Y1`、`Z1`、`I`，表示无参数类型的单量子逻辑门，其使用格式为“量子逻辑门关键字 + 空格 + 目标量子比特”。示例如下：
+@code{.c}
+    H q[0]
+@endcode
+
+- 单门一个参数型：其关键字包括 `RX`、`RY`、`RZ`、`U1`、`P`，表示有一个参数的单量子逻辑门，其使用格式为“量子逻辑门关键字 + 空格 + 目标量子比特 + 逗号 + (偏转角度)”。示例如下：
+@code{.c}
+    RX q[0],(1.570796)
+@endcode
+
+- 单门两个参数：其关键字包括 `U2`、`RPHI`，表示有两个参数的单量子逻辑门，其使用格式为“量子逻辑门关键字 + 空格 + 目标量子比特 + 逗号 + (两个偏转角度)”。示例如下：
+@code{.c}
+    U2 q[0],(1.570796,-3.141593)
+@endcode
+
+- 单门三个参数：其关键字包括 `U3`，表示有三个参数的单量子逻辑门，其使用格式为“量子逻辑门关键字 + 空格 + 目标量子比特 + 逗号 + (三个偏转角度)”。示例如下：
+@code{.c}
+    U3 q[0],(1.570796,4.712389,1.570796)
+@endcode
+
+- 单门四个参数：其关键字包括 `U4`，表示有四个参数的单量子逻辑门，其使用格式为“量子逻辑门关键字 + 空格 + 目标量子比特 + 逗号 + (四个偏转角度)”。示例如下：
+@code{.c}
+    U4 q[1],(3.141593,4.712389,1.570796,-3.141593)
+@endcode
+
+- 双门无参数：其关键字包括 `CNOT`、`CZ`、`ISWAP`、`SWAP`，表示无参数的双量子逻辑门，其使用格式为“量子逻辑门关键字 + 空格 + 控制比特 + 逗号 + 目标比特”。示例如下：
+@code{.c}
+    CNOT q[0],q[1]
+@endcode
+
+- 双门一个参数：其关键字包括 `CP`、`RXX`、`RYY`、`RZZ`、`RZX`，表示有一个参数的双量子逻辑门，其使用格式为“量子逻辑门关键字 + 空格 + 控制比特 + 逗号 + 目标比特 + 逗号 + (偏转角度)”。示例如下：
+@code{.c}
+    CR q[0],q[1],(1.570796)
+@endcode
+
+- 双门四个参数：其关键字包括 `CU`，表示有四个参数的单量子逻辑门，其使用格式为“量子逻辑门关键字 + 空格 + 控制比特 + 逗号 + 目标比特 + 逗号 + (四个偏转角度)”。示例如下：
+@code{.c}
+    CU q[1],q[3],(3.141593,4.712389,1.570796,-3.141593)
+@endcode
+
+- 三门无参数：其关键字包括 `TOFFOLI`，表示无参数的三量子逻辑门，其使用格式为“量子逻辑门关键字 + 空格 + 控制比特1 + 逗号 + 控制比特2 + 逗号 + 目标比特”。示例如下：
+@code{.c}
+    TOFFOLI q[0],q[1],q[2]
+@endcode
+
+@note
+需要注意的是，对于所有的单门操作，其目标量子比特可以是整个量子比特数组或者单个量子比特。如果是整个量子比特数组时，例如：
+@code{.c}
+    H q
+@endcode
+当量子比特数组大小为 3 时，则等效为：
+@code{.c}
+    H q[0]
+    H q[1]
+    H q[2]
+@endcode
+
+
+### 转置共轭操作
+
+OriginIR 中可以对一个或多个量子逻辑门进行转置共轭操作，OriginIR 使用 `DAGGER` 和 `ENDDAGGER` 关键字定义转置共轭操作的范围，一个 `DAGGER` 必须有一个 `ENDDAGGER` 匹配。示例如下：
+@code{.c}
+    DAGGER
+    H q[0]
+    CNOT q[0],q[1]
+    ENDDAGGER
+@endcode
+
+
+### 添加控制比特操作
+
+OriginIR 可以对一个或多个量子逻辑门添加控制比特，OriginIR 使用 `CONTROL` 和 `ENDCONTROL` 关键字定义添加控制比特的范围，`CONTROL` 后跟“空格 + 控制比特列表”。示例如下：
+@code{.c}
+    CONTROL q[2],q[3]
+    H q[0]
+    CNOT q[0],q[1]
+    ENDCONTROL
+@endcode
+
+
+### QIF (目前暂不支持)
+
+OriginIR 中可以表示量子条件判断程序，它通过 `QIF`、`ELSE`、`ENDIF` 框定量子条件判断程序的不同分支的范围。`QIF` 必须匹配一个 `ENDIF`，如果 `QIF` 有两个分支则需要有 `ELSE`，如果 `QIF` 只有一个分支则不需要有 `ELSE`，`QIF` 后跟“空格 + 判断表达式”。示例如下：
+@code{.c}
+    # 1、QIF只有一个条件分支
+    QIF c[0]==c[1]
+    H q[0]
+    CNOT q[0],q[1]
+    ENDIF
+
+    # 2、QIF有两个条件分支
+    QIF c[0]+c[1]<5
+    H q[0]
+    CNOT q[0],q[1]
+    ELSE
+    H q[0]
+    X q[1]
+    ENDIF
+@endcode
+
+
+### QWHILE (目前暂不支持)
+
+OriginIR 中可以表示量子循环判断程序，它通过 `QWHILE` 和 `ENDQWHILE` 框定循环判断程序的范围，`QWHILE` 必须匹配一个 `ENDQWHILE`，`QWHILE` 后跟“空格 + 判断表达式”。示例如下：
+@code{.c}
+    QWHILE c[0]<5
+    H q[c[0]]
+    c[0]=c[0]+1
+    ENDQWHILE
+@endcode
+
+
+### 经典表达式 (目前暂不支持)
+
+OriginIR 可以在量子程序中嵌入经典表达式，例如 `c[0]==c[1]+c[2]`，示例如下：
+@code{.c}
+    QWHILE c[0]<5
+    H q[c[0]]
+    c[0]=c[0]+1
+    ENDQWHILE
+@endcode
+
+该示例表示对 `q[0]~q[4]` 比特做 `H` 门操作。
+
+经典表达式中必须是经典寄存器和常量组成的表达式，经典表达式的操作符有：
+@code{.c}
+    { PLUS, "+" },
+    { MINUS, "-" },
+    { MUL, "*" },
+    { DIV, "/" },
+    { EQUAL, "==" },
+    { NE, "!=" },
+    { GT, ">" },
+    { EGT, ">=" },
+    { LT, "<" },
+    { ELT, "<=" },
+    { AND, "&&" },
+    { OR, "||" },
+    { NOT, "!" },
+    { ASSIGN, "=" }
+@endcode
+
+
+### MEASURE操作
+OriginIR 中的 `MEASURE` 表示对指定的量子比特进行测量操作，并把结果保存到指定的经典寄存器中。`MEASURE` 后跟“空格 + 目标量子比特 + ',' + 目标经典寄存器”。示例如下：
+@code{.c}
+    MEASURE q[0],c[0]
+@endcode
+
+如果申请的量子比特和经典寄存器数量相同。可以使用 `q` 表示所有量子比特，`c` 表示所有经典比特。示例如下：
+@code{.c}
+    MEAUSRE q,c
+@endcode
+
+如果量子比特和经典比特数量都为 3，则等效为：
+@code{.c}
+    MEAUSRE q[0],c[0]
+    MEAUSRE q[1],c[1]
+    MEAUSRE q[2],c[2]
+@endcode
+
+### RESET操作 (目前暂不支持)
+
+OriginIR 中的 `RESET` 操作是将操作的量子比特的量子态恢复到 0 态。其使用格式为 `RESET` 后跟“空格 + 目标量子比特”。其中目标量子比特可以是整个量子比特数组或者单个量子比特。示例如下：
+@code{.c}
+    RESET q
+
+    RESET q[1]
+@endcode
+
+
+### BARRIER操作
+
+OriginIR 中的 `BARRIER` 操作是将操作的量子比特进行阻断，防止在线路优化和执行过程。 格式为 `BARRIER` 后跟“空格 + 目标量子比特”。其中目标量子比特可以是整个量子比特数组或者单个、多个量子比特。示例如下：
+@code{.c}
+    BARRIER q
+    BARRIER q[0]
+    BARRIER q[0],q[1],q[2]
+@endcode
+
+
+### QGATE操作 (目前暂不支持)
+
+OriginIR 中的 `QGATE` 为自定义逻辑门操作，可以将多个逻辑门组合成一个新的逻辑门使用。 它通过 `QGATE` 和 `ENDQGATE` 框定自定义逻辑门的范围。同时需要注意的是，自定义逻辑门的形参名不能与上述相关关键字冲突。示例如下：
+@code{.c}
+    QGATE new_H a
+    H a
+    X a
+    ENDQGATE
+    new_H q[1]
+    QGATE new_RX a,(b)
+    RX a,(PI/2+b)
+    X a
+    ENDQGATE
+    new_RX q[1],(PI/4)
+@endcode
+
+
+### OriginIR程序示例
+
+下面展示了一个表征 OPE 算法的 OriginIR 量子程序示例：
+@code{.c}
+    QINIT 3
+    CREG 2
+    H q[2]
+    H q[0]
+    H q[1]
+    CONTROL q[1]
+    RX q[2],(-3.141593)
+    ENDCONTROL
+    CONTROL q[0]
+    RX q[2],(-3.141593)
+    RX q[2],(-3.141593)
+    ENDCONTROL
+    DAGGER
+    H q[1]
+    CR q[0],q[1],(1.570796)
+    H q[0]
+    ENDDAGGER
+    MEASURE q[0],c[0]
+    MEASURE q[1],c[1]
+@endcode
+
+
+### OriginIR转换工具
+
+%QPanda3 提供了一组 OriginIR 转换工具，主要用于实现 %QProg 与 OriginIR 之间的量子程序转译。其中，OriginIR 是一个中间表示（IR），用于表示量子程序的信息。%QProg 是量子编程的一个容器类，是一个量子程序的最高单位。下面将详细介绍这组转换工具的接口定义和使用。
+
+- 将 OriginIR 的指令集字符串转译成 %QProg 对象；
+- 将 OriginIR 的指令集文件转译成 %QProg 对象；
+- 将 %QProg 对象转译成 OriginIR 的指令集字符串。
+
+
+#### OriginIR字符串转译成%QProg
+
+%QPanda3 的编译模块中定义了将 OriginIR 指令集字符串转译成 %QProg 对象的接口，该接口声明如下：
+
+@add_toggle_cpp
+    @snippet samples/cpp/convert_originir_string_to_qprog.cpp  OriginIR String to Qprog C++ interface
+    - 参数：
+        + ir_str(std::string) -- 要转化的 OriginIR 格式的字符串
+    - 返回：
+        + (%QProg) -- 转化后的量子程序
+@end_toggle
+
+@add_toggle_python
+    @snippet samples/python/convert_originir_string_to_qprog.py  OriginIR String to Qprog Python interface
+    - 参数：
+        + ir_str(str) -- 要转化的 OriginIR 格式的字符串
+    - 返回：
+        + (%QProg) -- 转化后的量子程序
+@end_toggle
+
+下面通过简单的接口调用示例来演示 OriginIR 的指令集字符串转化为量子程序 %QProg 的过程：
+
+@add_toggle_cpp
+    @snippet samples/cpp/convert_originir_string_to_qprog.cpp  Example of testing OriginIR String to Qprog
+@end_toggle
+
+@add_toggle_python
+    @snippet samples/python/convert_originir_string_to_qprog.py  Example of testing OriginIR String to Qprog
+@end_toggle
+
+运行结果如下：
+@code{.bash}
+Result(stv) of running qprog:
+
+( 3.6742350925920025e-07 , -0.7071067811864525 )
+( 0.0 , 0.0 )
+( 0.0 , 0.0 )
+( 0.0 , 0.0 )
+( 3.6742350925920025e-07 , -0.7071067811864525 )
+( 0.0 , 0.0 )
+( 0.0 , 0.0 )
+( 0.0 , 0.0 )
+
+          ┌─┐                  ┌──────────────┐ ┌──────────────┐  ┌─┐    
+q_0:  |0>─┤H├ ──────────────── ┤0             ├ ┤0             ├ ─┤M├─── 
+          ├─┤ ┌──────────────┐ │              │ │  QCircuit_2  │  └╥┘┌─┐ 
+q_1:  |0>─┤H├ ┤0             ├ ┤  QCircuit_1  ├ ┤1             ├ ──╫─┤M├ 
+          ├─┤ │  QCircuit_0  │ │              │ └──────────────┘   ║ └╥┘ 
+q_2:  |0>─┤H├ ┤1             ├ ┤1             ├ ──────────────── ──╫──╫─ 
+          └─┘ └──────────────┘ └──────────────┘                    ║  ║  
+ c :   / ══════════════════════════════════════════════════════════╩══╩═
+                                                                    0  1
+@endcode
+
+@note
+对于暂不支持的操作类型，可能会在 OriginIR 转化成量子程序的过程中发生错误。
+
+
+#### OriginIR文件转译成%QProg
+
+%QPanda3 的编译模块中定义了将 OriginIR 指令集文件转译成 %QProg 对象的接口，该接口声明如下：
+
+@add_toggle_cpp
+    @snippet samples/cpp/convert_originir_file_to_qprog.cpp  OriginIR File to Qprog C++ interface
+    - 参数：
+        + ir_filepath(std::string) -- 要转化的 OriginIR 格式的文件路径字符串
+    - 返回：
+        + (%QProg) -- 转化后的量子程序
+@end_toggle
+
+@add_toggle_python
+    @snippet samples/python/convert_originir_file_to_qprog.py  OriginIR File to Qprog Python interface
+    - 参数：
+        + ir_filepath(str) -- 要转化的 OriginIR 格式的文件路径字符串
+    - 返回：
+        + (%QProg) -- 转化后的量子程序
+@end_toggle
+
+下面通过简单的接口调用示例来演示 OriginIR 的指令集文件转化为量子程序 %QProg 的过程：
+
+@add_toggle_cpp
+    @snippet samples/cpp/convert_originir_file_to_qprog.cpp  Example of testing OriginIR File to Qprog
+@end_toggle
+
+@add_toggle_python
+    @snippet samples/python/convert_originir_file_to_qprog.py  Example of testing OriginIR File to Qprog
+@end_toggle
+
+运行结果如下：
+@code{.bash}
+Result(stv) of running qprog:
+
+( 3.6742350925920025e-07 , -0.7071067811864525 )
+( 0.0 , 0.0 )
+( 0.0 , 0.0 )
+( 0.0 , 0.0 )
+( 3.6742350925920025e-07 , -0.7071067811864525 )
+( 0.0 , 0.0 )
+( 0.0 , 0.0 )
+( 0.0 , 0.0 )
+
+          ┌─┐                  ┌──────────────┐ ┌──────────────┐  ┌─┐    
+q_0:  |0>─┤H├ ──────────────── ┤0             ├ ┤0             ├ ─┤M├─── 
+          ├─┤ ┌──────────────┐ │              │ │  QCircuit_2  │  └╥┘┌─┐ 
+q_1:  |0>─┤H├ ┤0             ├ ┤  QCircuit_1  ├ ┤1             ├ ──╫─┤M├ 
+          ├─┤ │  QCircuit_0  │ │              │ └──────────────┘   ║ └╥┘ 
+q_2:  |0>─┤H├ ┤1             ├ ┤1             ├ ──────────────── ──╫──╫─ 
+          └─┘ └──────────────┘ └──────────────┘                    ║  ║  
+ c :   / ══════════════════════════════════════════════════════════╩══╩═
+                                                                    0  1
+@endcode
+
+@note
+对于暂不支持的操作类型，可能会在 OriginIR 转化成量子程序的过程中发生错误。
+
+
+#### %QProg转译成OriginIR字符串
+
+%QPanda3 的编译模块中定义了将 %QProg 对象转译成 OriginIR 指令集字符串的接口，该接口声明如下：
+
+@add_toggle_cpp
+    @snippet samples/cpp/convert_qprog_to_originir_string.cpp  Qprog to OriginIR String C++ interface
+    - 参数：
+        + prog(const QProg&) -- 要转化的量子程序
+    - 返回：
+        + (std::string) -- 转化后的 OriginIR 格式的字符串
+@end_toggle
+
+@add_toggle_python
+    @snippet samples/python/convert_qprog_to_originir_string.py  Qprog to OriginIR String Python interface
+    - 参数：
+        + prog(QProg) -- 要转化的量子程序
+    - 返回：
+        + (str) -- 转化后的 OriginIR 格式的字符串
+@end_toggle
+
+下面通过简单的接口调用示例来演示量子程序 %QProg 转化为 OriginIR 的指令集字符串的过程：
+
+@add_toggle_cpp
+    @snippet samples/cpp/convert_qprog_to_originir_string.cpp  Example of testing Qprog to OriginIR String
+@end_toggle
+
+@add_toggle_python
+    @snippet samples/python/convert_qprog_to_originir_string.py  Example of testing Qprog to OriginIR String
+@end_toggle
+
+运行结果如下：
+@code{.bash}
+Result(stv) of running qprog:
+
+( 3.6742350925920025e-07 , -0.7071067811864525 )
+( 0.0 , 0.0 )
+( 0.0 , 0.0 )
+( 0.0 , 0.0 )
+( 3.6742350925920025e-07 , -0.7071067811864525 )
+( 0.0 , 0.0 )
+( 0.0 , 0.0 )
+( 0.0 , 0.0 )
+
+
+          ┌─┐                  ┌──────────────┐ ┌──────────────┐  ┌─┐    
+q_0:  |0>─┤H├ ──────────────── ┤0             ├ ┤0             ├ ─┤M├─── 
+          ├─┤ ┌──────────────┐ │              │ │  QCircuit_2  │  └╥┘┌─┐ 
+q_1:  |0>─┤H├ ┤0             ├ ┤  QCircuit_1  ├ ┤1             ├ ──╫─┤M├ 
+          ├─┤ │  QCircuit_0  │ │              │ └──────────────┘   ║ └╥┘ 
+q_2:  |0>─┤H├ ┤1             ├ ┤1             ├ ──────────────── ──╫──╫─ 
+          └─┘ └──────────────┘ └──────────────┘                    ║  ║  
+ c :   / ══════════════════════════════════════════════════════════╩══╩═
+                                                                    0  1
+
+
+QINIT 3
+CREG 2
+H q[2]
+H q[0]
+H q[1]
+CONTROL q[1]
+RX q[2],(-3.14159)
+ENDCONTROL
+
+CONTROL q[0]
+RX q[2],(-3.14159)
+RX q[2],(-3.14159)
+ENDCONTROL
+
+DAGGER
+H q[1]
+H q[0]
+ENDDAGGER
+
+MEASURE q[0],c[0]
+MEASURE q[1],c[1]
+@endcode

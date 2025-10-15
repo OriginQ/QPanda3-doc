@@ -1,0 +1,370 @@
+OpenQASM  {#tutorial_quantum_program_of_content_QASM}
+=====================================================
+
+[TOC]
+
+@prev_tutorial{intro}
+@next_tutorial{tutorial_py_root}
+
+-------------------------------------------------------------------------------------------------------------------------------
+
+### 概述
+
+[**OpenQASM (Open Quantum Assembly Language)**](https://openqasm.com/index.html "OpenQASM")，即开放量子汇编语言，是一种命令式编程语言，它的特性类似于硬件描述语言（Hardware Description Language），由 IBM 公司于 2017 年 7 月在其量子计算平台推出，它能够使用线路模型、基于测量的模型和近期量子计算实验来描述通用的量子计算，也是目前适用范围较广的量子汇编语言，目前已更新至 3.0 版本。
+
+@note
+目前，QPanda3的量子程序转译接口的执行效率要高于QPanda2中对应的接口，并且QPanda3支持注释解析。
+
+
+### OpenQASM程序示例
+
+与 @ref tutorial_quantum_program_of_content_OriginIR 介绍中的语法规则类似，下面我们提供了一段 OpenQASM 示例：
+@code{.c}
+    OPENQASM 3.0;
+    include "stdgates.inc";
+    qreg q[10];
+    creg c[10];
+
+    x q[0];
+    h q[1];
+    tdg q[2];
+    sdg q[2];
+    cx q[0],q[2];
+    cx q[1],q[4];
+    u1(pi) q[0];
+    u2(pi,pi) q[1];
+    u3(pi,pi,pi) q[2];
+    cz q[2],q[5];
+    ccx q[3],q[4],q[6];
+    cu3(pi,pi,pi) q[0],q[1];
+    measure q[2] -> c[2];
+    measure q[0] -> c[0];
+@endcode
+
+OpenQASM 是一种基于 C 和汇编语言风格的量子编程语言，适用于编写量子算法。它提供了一套用于量子计算的基础语法，支持量子寄存器和经典寄存器的声明，常见的量子门（例如 CNOT 和单量子位变换门）调用，以及执行测量操作等。用户可以通过这些基本构造来定义量子算法并进行量子计算的编程。
+
+
+### 版本字符串
+
+OpenQASM 程序的第一行非注释行应该选择 `OPENQASM M.m`；表示主版本 `M` 和次版本 `m`。示例如下：
+@code{.c}
+    OPENQASM 3.0;
+@endcode
+
+@note
+不允许多次出现版本字符串（注释之外），也不能出现在第一行非注释行之外的地方。
+
+
+### 头文件包含
+
+OpenQASM 程序在使用内置的各种量子门以及量子指令时，需要事先引入标准库文件，这里使用 OpenQASM 3 的标准库 `stdgates.inc`。示例如下：
+@code{.c}
+    include "stdgates.inc";
+@endcode
+语句 `include "filename";` 将解析文件名，就好像文件内容被插入到 `include` 语句的位置一样，该语句只能在全局范围内使用。
+
+
+### 量子比特
+
+OpenQASM 一般使用 `qubit` 或者 `qreg` 申请量子比特和寄存器。语句 `qubit name` 声明了对量子比特的引用；语句 `qubit[size] name` 或者 `qreg name[size]` 声明了一个大小为 `size` 的量子寄存器。大小参数 `size` 必须始终是编译时不变的非负整数，且量子寄存器在声明后不能调整大小。示例如下：
+@code{.c}
+    // 1.qubit name
+    qubit q0;
+
+    // 2.qubit[size] name
+    qubit[5] q1;
+
+    // 3.qreg name[size]
+    qreg q2[5];
+@endcode
+上述语句分别声明一个量子比特和两个大小为 5 的量子寄存器。
+
+@note
+量子类型变量的声明和初始化都必须一次一个变量地进行。任何类型都不允许使用逗号分隔的声明/初始化。示例如下：
+@code{.c}
+    qubit q0;
+    qubit q1;
+    qubit q2;
+@endcode
+
+
+### 经典标量类型
+
+@note
+经典类型变量的声明和初始化都必须一次一个变量地进行。任何类型都不允许使用逗号分隔的声明/初始化。示例如下：
+@code{.c}
+    bit q0;
+    bit q1;
+    bit q2;
+@endcode
+
+#### 经典比特和寄存器
+
+经典比特类型的值为 0 或 1。经典寄存器是静态的比特数组。经典寄存器模拟了 OpenQASM 程序中的部分控制器状态。
+
+OpenQASM 一般使用 `bit` 或者 `creg` 申请经典比特和寄存器。语句 `bit name` 声明了一个经典比特；语句 `bit[size] name` 或者 `creg name[size]` 声明了一个大小为 `size` 的经典寄存器。大小参数 `size` 必须始终是编译时不变的非负整数，且经典寄存器在声明后不能调整大小。示例如下：
+@code{.c}
+    // 1.bit name
+    bit c0;
+
+    // 2.bit[size] name
+    bit[5] c1;
+
+    // 3.creg name[size]
+    creg c2[5];
+@endcode
+上述语句分别声明一个经典比特和两个大小为 5 的经典寄存器。
+
+#### 其他经典类型
+OpenQASM 还支持 n 位有符号整数 `int` 和无符号整数 `uint`、浮点数 `float`、表示经典角度的类型 `angle` 、布尔类型 `bool`、 编译时常量 `const`等。示例如下：
+@code{.c}
+    // 1.int/uint
+    uint[32] integer0 = 10;         // Declare a 32-bit unsigned integer
+    int[16] integer1;               // Declare a 16 bit signed integer
+    integer1 = int[16](integer0);
+    int integer2;                   // Declare a machine-sized integer
+
+    // 2.float
+    float[32] floatnum0 = π;    // Declare a single-precision 32-bit float
+    float floatnum1 = 2.3;      // Declare a machine-precision float.
+
+    // 3.angle
+    angle[2] anglnum0 = π/2;    // Declare a 2-bit angle with the value of "π/2"
+    angle anglnum1;             // Declare a machine-sized angle
+
+    // 4.bool
+    bit bit0 = 0;
+    bool boolean0;
+    boolean0 = bit0;        // Assign a cast bit to a boolean
+
+    // 5.const
+    const uint SIZE = 32;   // Declares a compile-time unsigned integer.
+    qubit[SIZE] q;          // Declares a 32-qubit register called `q1`.
+    int[SIZE] integer3;     // Declares a signed integer called `i1` with 32 bits.
+@endcode
+
+
+### 量子逻辑门
+OpenQASM 的标准库文件中对内置定义的门进行了如下分类：
+
+- 单量子比特门：其关键字包括 `p`、`x`、`y`、`z`、`h`、`s`、`sdg`、`t`、`tdg`、`sx`、`rx`、`ry`、`rz`、`phase`、`id`、`u1`、`u2`、`u3`，其使用格式为 `gate(params) qbit`。示例如下：
+@code{.c}
+    qubit[4] q;
+    h q;
+    sdg q[0];
+    rx(3.14 / 2) q[2];
+    h q[1];
+    t q[3];
+@endcode
+
+- 双量子比特门：其关键字包括 `cx`、`cy`、`cz`、`cp`、`crx`、`cry`、`crz`、`ch`、`cu`、`swap`、`cphase`，其使用格式为 `gate(params) qbit1, qbit2`。示例如下：
+@code{.c}
+    qubit[4] q;
+    h q;
+    U3(0, 0, 3.14 / 2) q[0];
+    CX q[0], q[1];
+    U3(0, 0, -3.14 / 2) q[1];
+    CX q[2], q[3];
+    U3(0, 0, 3.14 / 2) q[2];
+@endcode
+
+- 三量子比特门：其关键字包括 `cxx`、`cswap`，其使用格式为 `gate(params) qbit1, qbit2, qbit3`。示例如下：
+@code{.c}
+    qubit[4] q;
+    x q[0];
+    y q[1];
+    z q[2];
+    cswap q[0], q[1], q[2];
+@endcode
+
+@note
+需要注意的是，对于所有的单量子比特门操作，其目标量子比特可以是整个量子比特数组或者单个量子比特。如果是整个量子比特数组时，例如：
+@code{.c}
+    H q;
+@endcode
+当量子比特数组大小为 3 时，则等效为：
+@code{.c}
+    H q[0];
+    H q[1];
+    H q[2];
+@endcode
+
+
+### 初始化操作 (目前暂不支持)
+
+OpenQASM 一般使用关键字 `reset` 将操作的量子比特的量子态恢复到 0 态。其使用格式为 `reset qbit`，其中目标量子比特 `qbit` 可以是整个量子比特数组或者单个量子比特。示例如下：
+@code{.c}
+    // Initialize and reset a register of 10 qubits
+    qubit[10] qubits;
+    reset qubits;
+@endcode
+
+
+### 测量操作
+
+OpenQASM 一般使用关键字 `measure` 来对指定的目标量子比特执行测量操作，并将测量结果分配给目标经典比特或者经典比特数组。其使用格式为 `measure qbit -> cbit`，其中目标量子比特 `qbit` 可以是整个量子比特数组或者单个量子比特，目标经典比特 `cbit` 可以是整个经典比特数组或者单个经典比特。示例如下：
+@code{.c}
+    measure q[0] -> c[0];
+@endcode
+
+@note
+如果申请的量子比特和经典寄存器数量相同。可以使用 `q` 表示所有量子比特，`c` 表示所有经典比特。示例如下：
+@code{.c}
+    measure q -> c;
+@endcode
+如果量子比特和经典比特数量都为 3，则等效为：
+@code{.c}
+    measure q[0] -> c[0];
+    measure q[1] -> c[1];
+    measure q[2] -> c[2];
+@endcode
+
+
+### 自定义门
+
+OpenQASM 支持自定义分层量子门操作，其关键字为 `gate`，使用格式为 `gate name(params) qbits { ... }`。示例如下：
+@code{.c}
+    qubit[4] q;
+    gate my_gate01(param) qarg1, qarg2 {
+        U3(0, 0, param / 2) qarg1;
+        CX qarg2, qarg1;
+        U3(0, 0, - param / 2) qarg2;
+        CX qarg1, qarg2;
+        U3(0, 0, param / 2) qarg1;
+    }
+    gate my_gate02 qarg1, qarg2 {
+        h qarg2;
+        sdg qarg2;
+        CX qarg1, qarg2;
+        h qarg2;
+        t qarg2;
+        CX qarg1, qarg2;
+        t qarg2;
+        h qarg2;
+    }
+
+    my_gate01(3.14 / 2) q[2], q[3];
+    my_gate02 q[0], q[1];
+@endcode
+
+
+### OpenQASM转换工具
+%QPanda3 提供了一组 OpenQASM 转换工具，主要用于实现从 %QProg 到 OpenQASM 的单向量子程序转译。其中，OpenQASM 是一个量子汇编语言，用于表示量子程序的信息。%QProg 是量子编程的一个容器类，是一个量子程序的最高单位。下面将详细介绍这组转换工具的接口定义和使用。
+
+- 将 OpenQASM 的指令集字符串转译成 %QProg 对象；
+- 将 OpenQASM 的指令集文件转译成 %QProg 对象。
+
+#### OpenQASM字符串转译成%QProg
+
+%QPanda3 的编译模块中定义了将 OpenQASM 指令集字符串转译成 %QProg 对象的接口，该接口声明如下：
+
+@add_toggle_cpp
+    @snippet samples/cpp/convert_qasm_string_to_qprog.cpp  QASM String to Qprog C++ interface
+    - 参数：
+        + qasm_str(std::string) -- 要转化的 OpenQASM 格式的字符串
+    - 返回：
+        + (%QProg) -- 转化后的量子程序
+@end_toggle
+
+@add_toggle_python
+    @snippet samples/python/convert_qasm_string_to_qprog.py  QASM String to Qprog Python interface
+    - 参数：
+        + qasm_str(str) -- 要转化的 OpenQASM 格式的字符串
+    - 返回：
+        + (%QProg) -- 转化后的量子程序
+@end_toggle
+
+下面通过简单的接口调用示例来演示 OpenQASM 的指令集字符串转化为量子程序 %QProg 的过程：
+
+@add_toggle_cpp
+    @snippet samples/cpp/convert_qasm_string_to_qprog.cpp  Example of testing QASM String to Qprog
+@end_toggle
+
+@add_toggle_python
+    @snippet samples/python/convert_qasm_string_to_qprog.py  Example of testing QASM String to Qprog
+@end_toggle
+
+运行结果如下：
+@code{.bash}
+Result(stv) of running qprog:
+
+( 0.010496566630281416 , -0.4013645559739494 )
+( -0.010496566630281416 , -0.2978021782757585 )
+( 0.010496566630281416 , -0.4013645559739494 )
+( -0.010496566630281416 , -0.2978021782757585 )
+( -0.010496566630281416 , -0.2978021782757585 )
+( 0.010496566630281416 , -0.4013645559739494 )
+( 0.010496566630281416 , 0.2978021782757585 )
+( -0.010496566630281416 , 0.4013645559739494 )
+
+          ┌─────────────────┐               ┌─┐     ┌─┐            
+q_0:  |0>─┤U3(0.3, 0.2, 0.1)├ ────── ───*── ┤H├─── ─┤M├── ─── ──── 
+          ├─┬───────────────┘        ┌──┴─┐ └┬┴┐    └╥┘            
+q_1:  |0>─┤H├──────────────── ───*── ┤CNOT├ ─┤M├── ──╫─── ─── ──── 
+          └─┘                 ┌──┴─┐ ├─┬──┘  └╥┼─┐   ║┌─┐ ┌─┐  ┌─┐ 
+q_2:  |0>──────────────────── ┤CNOT├ ┤Z├─── ──╫┤X├ ──╫┤Y├ ┤H├ ─┤M├ 
+                              └────┘ └─┘      ║└─┘   ║└─┘ └─┘  └╥┘ 
+ c :   / ═════════════════════════════════════╩══════╩══════════╩═
+                                               1      0          2
+@endcode
+
+@note
+对于暂不支持的操作类型，可能会在 OpenQASM 转化成量子程序的过程中发生错误。
+
+
+#### OpenQASM文件转译成%QProg
+
+%QPanda3 的编译模块中定义了将 OpenQASM 指令集文件转译成 %QProg 对象的接口，该接口声明如下：
+
+@add_toggle_cpp
+    @snippet samples/cpp/convert_qasm_file_to_qprog.cpp  QASM File to Qprog C++ interface
+    - 参数：
+        + qasm_filepath(std::string) -- 要转化的 OpenQASM 格式的文件路径字符串
+    - 返回：
+        + (%QProg) -- 转化后的量子程序
+@end_toggle
+
+@add_toggle_python
+    @snippet samples/python/convert_qasm_file_to_qprog.py  QASM File to Qprog Python interface
+    - 参数：
+        + file_path(str) -- 要转化的 OpenQASM 格式的文件路径字符串
+    - 返回：
+        + (%QProg) -- 转化后的量子程序
+@end_toggle
+
+下面通过简单的接口调用示例来演示 OpenQASM 的指令集文件转化为量子程序 %QProg 的过程：
+
+@add_toggle_cpp
+    @snippet samples/cpp/convert_qasm_file_to_qprog.cpp  Example of testing QASM File to Qprog
+@end_toggle
+
+@add_toggle_python
+    @snippet samples/python/convert_qasm_file_to_qprog.py  Example of testing QASM File to Qprog
+@end_toggle
+
+运行结果如下：
+@code{.bash}
+Result(stv) of running qprog:
+
+( 0.010496566630281416 , -0.4013645559739494 )
+( -0.010496566630281416 , -0.2978021782757585 )
+( 0.010496566630281416 , -0.4013645559739494 )
+( -0.010496566630281416 , -0.2978021782757585 )
+( -0.010496566630281416 , -0.2978021782757585 )
+( 0.010496566630281416 , -0.4013645559739494 )
+( 0.010496566630281416 , 0.2978021782757585 )
+( -0.010496566630281416 , 0.4013645559739494 )
+
+          ┌─────────────────┐               ┌─┐     ┌─┐            
+q_0:  |0>─┤U3(0.3, 0.2, 0.1)├ ────── ───*── ┤H├─── ─┤M├── ─── ──── 
+          ├─┬───────────────┘        ┌──┴─┐ └┬┴┐    └╥┘            
+q_1:  |0>─┤H├──────────────── ───*── ┤CNOT├ ─┤M├── ──╫─── ─── ──── 
+          └─┘                 ┌──┴─┐ ├─┬──┘  └╥┼─┐   ║┌─┐ ┌─┐  ┌─┐ 
+q_2:  |0>──────────────────── ┤CNOT├ ┤Z├─── ──╫┤X├ ──╫┤Y├ ┤H├ ─┤M├ 
+                              └────┘ └─┘      ║└─┘   ║└─┘ └─┘  └╥┘ 
+ c :   / ═════════════════════════════════════╩══════╩══════════╩═
+                                               1      0          2
+@endcode
+
+@note
+对于暂不支持的操作类型，可能会在 OpenQASM 转化成量子程序的过程中发生错误。

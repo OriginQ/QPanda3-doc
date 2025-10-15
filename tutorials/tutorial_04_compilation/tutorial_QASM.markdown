@@ -1,0 +1,395 @@
+OpenQASM  {#tutorial_quantum_program_of_content_QASM}
+=====================================================
+
+[TOC]
+
+@prev_tutorial{tutorial_quantum_program_of_content_OriginIR}
+@next_tutorial{tutorial_quantum_visualization}
+
+-------------------------------------------------------------------------------------------------------------------------------
+
+### Overview
+
+[**OpenQASM (Open Quantum Assembly Language)**](https://openqasm.com/index.html "OpenQASM") is an imperative programming language with characteristics similar to a Hardware Description Language (HDL). It was launched by IBM in July 2017 as part of its quantum computing platform. OpenQASM can describe general quantum computations using circuit models, measurement-based models, and recent quantum computing experiments. 
+
+It is currently one of the most widely used quantum assembly languages and has been updated to version 3.0. However, QPanda3 currently only supports OpenQASM 2.0 syntax rules.
+
+@note
+Currently, the new release of QPanda3 has the following updates compared to the older version of QPanda2 regarding the OpenQASM module:
+- First, QPanda3's OpenQASM interface for translating QProg supports program comment parsing.
+- Second, the OpenQASM part of QPanda3 only supports operations such as applying quantum bit and register, quantum logic gate, Custom Gate, and measurement, but not operations such as quantum conditional judgment (QIF), quantum cyclic control (QWHILE), classical expressions, and RESET.
+- Finally, when executing large quantum program translations, compared to QPanda2's translation interface, QPanda3's translation interface is executed about 4.0 times more efficiently (located in Ubuntu 22.04 environment).
+@code{.c}
+// QPanda2's translation interface
+def convert_qasm_to_qprog(file_path: str, machine: QuantumMachine) -> list
+def convert_qasm_string_to_qprog(qasm_str: str, machine: QuantumMachine) -> list
+
+// QPanda3's translation interface
+def convert_qasm_file_to_qprog(file_path: str) -> QProg
+def convert_qasm_string_to_qprog(qasm_str: str) -> QProg
+@endcode
+
+
+### OpenQASM Program Example
+
+Similar to the syntax rules in the @ref tutorial_quantum_program_of_content_OriginIR introduction, here is an example of OpenQASM:
+@code{.c}
+    OPENQASM 2.0;
+    include "qelib1.inc";
+    qreg q[10];
+    creg c[10];
+
+    x q[0];
+    h q[1];
+    tdg q[2];
+    sdg q[2];
+    cx q[0],q[2];
+    cx q[1],q[4];
+    u1(pi) q[0];
+    u2(pi,pi) q[1];
+    u3(pi,pi,pi) q[2];
+    cz q[2],q[5];
+    ccx q[3],q[4],q[6];
+    cu3(pi,pi,pi) q[0],q[1];
+    measure q[2] -> c[2];
+    measure q[0] -> c[0];
+@endcode
+
+OpenQASM is a quantum programming language based on the style of C and assembly languages, designed for writing quantum algorithms. It provides a basic syntax for quantum computing, supporting the declaration of quantum and classical registers, invocation of common quantum gates (such as CNOT and single-qubit transformation gates), and execution of measurement operations, among others. Users can define quantum algorithms and perform quantum computing programming using these fundamental constructs.
+
+
+### Version String
+
+The first non-comment line of an OpenQASM program should specify `OPENQASM M.m`, where `M` represents the major version and `m` represents the minor version. An example is as follows:
+@code{.c}
+    OPENQASM 2.0;
+@endcode
+
+@note
+The version string should not appear multiple times (outside of comments), nor should it appear anywhere other than the first non-comment line.
+
+
+### Included file
+
+In OpenQASM programs, when using built-in quantum gates and quantum instructions, it is necessary to import standard library files beforehand. In this case, the standard library `qelib1.inc` for OpenQASM 2 is used. An example is as follows:
+@code{.c}
+    include "qelib1.inc";
+@endcode
+The statement `include "filename";` will parse the file name as if the content of the file is inserted at the location of the `include` statement. This statement can only be used in the global scope.
+
+
+### Quantum Bit
+
+OpenQASM typically uses `qubit` or `qreg` to allocate quantum bits and registers. The statement `qubit name` declares a reference to a quantum bit, and the statement `qubit[size] name` or `qreg name[size]` declares a quantum register of size `size`. The size parameter `size` must always be a non-negative integer that is constant at compile time, and the quantum register cannot be resized after declaration. An example is as follows:
+@code{.c}
+    // 1.qubit name
+    qubit q0;
+
+    // 2.qubit[size] name
+    qubit[5] q1;
+
+    // 3.qreg name[size]
+    qreg q2[5];
+@endcode
+The above statements declare one quantum bit and two quantum registers, each of size 5.
+
+@note
+Quantum-type variables must be declared and initialized one variable at a time. No type allows comma-separated declarations/initializations. An example is as follows:
+@code{.c}
+    qubit q0;
+    qubit q1;
+    qubit q2;
+@endcode
+
+
+### Classical Scalar Type
+
+OpenQASM supports classical scalar types as well as type-related operations, where types include classical bit type, integer, float-point number, boolean, classical angle, and so on. The following is a brief introduction to types.
+
+@note
+Classical-type variables must be declared and initialized one variable at a time. No type allows comma-separated declarations/initializations. An example is as follows:
+@code{.c}
+    bit q0;
+    bit q1;
+    bit q2;
+@endcode
+
+#### Classical Bit and Register
+
+Classical bit type has values of 0 or 1. Classical register is an static array of bit. Classical register simulates the state of certain controllers in an OpenQASM program.
+
+OpenQASM typically uses `bit` or `creg` to allocate classical bits and registers. The statement `bit name` declares a classical bit, and the statement `bit[size] name` or `creg name[size]` declares a classical register of size `size`. The size parameter `size` must always be a non-negative integer that is constant at compile time, and the classical register cannot be resized after declaration. An example is as follows:
+@code{.c}
+    // 1.bit name
+    bit c0;
+
+    // 2.bit[size] name
+    bit[5] c1;
+
+    // 3.creg name[size]
+    creg c2[5];
+@endcode
+The above statements declare one classical bit and two classical registers, each of size 5.
+
+#### Other Classical Type
+OpenQASM also supports n-bit signed integers `int` and unsigned integers `uint`, floating-point numbers `float`, the type `angle` for representing classical angles, Boolean type `bool`, compile-time constants `const`, and others. An example is as follows:
+@code{.c}
+    // 1.int/uint
+    uint[32] integer0 = 10;         // Declare a 32-bit unsigned integer
+    int[16] integer1;               // Declare a 16 bit signed integer
+    integer1 = int[16](integer0);
+    int integer2;                   // Declare a machine-sized integer
+
+    // 2.float
+    float[32] floatnum0 = π;    // Declare a single-precision 32-bit float
+    float floatnum1 = 2.3;      // Declare a machine-precision float.
+
+    // 3.angle
+    angle[2] anglnum0 = π/2;    // Declare a 2-bit angle with the value of "π/2"
+    angle anglnum1;             // Declare a machine-sized angle
+
+    // 4.bool
+    bit bit0 = 0;
+    bool boolean0;
+    boolean0 = bit0;        // Assign a cast bit to a boolean
+
+    // 5.const
+    const uint SIZE = 32;   // Declares a compile-time unsigned integer.
+    qubit[SIZE] q;          // Declares a 32-qubit register called `q1`.
+    int[SIZE] integer3;     // Declares a signed integer called `i1` with 32 bits.
+@endcode
+
+
+### Quantum Logic Gate
+
+The standard library files in OpenQASM categorize the built-in gates as follows:
+
+- Single-qubit gates: Their keywords include `p`, `x`, `y`, `z`, `h`, `s`, `sdg`, `t`, `tdg`, `sx`, `rx`, `ry`, `rz`, `phase`, `id`, `u1`, `u2`, `u3`, and their usage format is `gate(params) qbit`. An example is as follows:
+@code{.c}
+    qubit[4] q;
+    h q;
+    sdg q[0];
+    rx(3.14 / 2) q[2];
+    h q[1];
+    t q[3];
+@endcode
+
+- Two-qubit gates: Their keywords include `cx`, `cy`, `cz`, `cp`, `crx`, `cry`, `crz`, `ch`, `cu`, `swap`, `cphase`, and their usage format is `gate(params) qbit1, qbit2`. An example is as follows:
+@code{.c}
+    qubit[4] q;
+    h q;
+    U3(0, 0, 3.14 / 2) q[0];
+    CX q[0], q[1];
+    U3(0, 0, -3.14 / 2) q[1];
+    CX q[2], q[3];
+    U3(0, 0, 3.14 / 2) q[2];
+@endcode
+
+- Three-qubit gates: Their keywords include `cxx` and `cswap`, and their usage format is `gate(params) qbit1, qbit2, qbit3`. An example is as follows:
+@code{.c}
+    qubit[4] q;
+    x q[0];
+    y q[1];
+    z q[2];
+    cswap q[0], q[1], q[2];
+@endcode
+
+@note
+It is important to note that for all single-qubit gate operations, the target quantum bit can be either the entire quantum bit array or a single quantum bit. When it is the entire quantum bit array, for example:
+@code{.c}
+    h q;
+@endcode
+When the quantum bit array size is 3, it is equivalent to:
+@code{.c}
+    h q[0];
+    h q[1];
+    h q[2];
+@endcode
+
+
+### Measurement Operation
+
+OpenQASM typically uses the keyword `measure` to perform a measurement operation on the specified target quantum bit and assign the measurement result to the target classical bit or classical bit array. The usage format is `measure qbit -> cbit`, where the target quantum bit `qbit` can be either the entire quantum bit array or a single quantum bit, and the target classical bit `cbit` can be either the entire classical bit array or a single classical bit. An example is as follows:
+@code{.c}
+    measure q[0] -> c[0];
+@endcode
+
+@note
+If the number of allocated quantum bits and classical registers is the same, you can use `q` to represent all quantum bits and `c` to represent all classical bits. An example is as follows:
+@code{.c}
+    measure q -> c;
+@endcode
+If both the number of quantum bits and classical bits is 3, it is equivalent to:
+@code{.c}
+    measure q[0] -> c[0];
+    measure q[1] -> c[1];
+    measure q[2] -> c[2];
+@endcode
+
+
+### Custom Gate Operation
+OpenQASM supports custom layered quantum gate operation with the keyword `gate`. The usage format is `gate name(params) qbits { ... }`. An example is as follows:
+@code{.c}
+    qubit[4] q;
+    gate my_gate01(param) qarg1, qarg2 {
+        U3(0, 0, param / 2) qarg1;
+        CX qarg2, qarg1;
+        U3(0, 0, - param / 2) qarg2;
+        CX qarg1, qarg2;
+        U3(0, 0, param / 2) qarg1;
+    }
+    gate my_gate02 qarg1, qarg2 {
+        h qarg2;
+        sdg qarg2;
+        CX qarg1, qarg2;
+        h qarg2;
+        t qarg2;
+        CX qarg1, qarg2;
+        t qarg2;
+        h qarg2;
+    }
+
+    my_gate01(3.14 / 2) q[2], q[3];
+    my_gate02 q[0], q[1];
+@endcode
+
+
+### Dynamic Circuit
+
+Currently, OpenQASM 2.0 only supports one type of classically controlled quantum operation—the `if` conditional statement. The `if` statement conditionally executes quantum operations based on the value of a classical register, following the syntax: `if(creg == int) qopt;`. Here, the quantum operation is executed only when the register holds the specified integer value. Presently, the quantum operations that can be guided by the `if` statement primarily include built-in quantum gates, custom gates, and measurement operations. An example is shown below:
+@code{.c}
+    OPENQASM 2.0;
+    include "qelib1.inc";
+
+    qreg q[4];
+    creg c[4];
+
+    h q[0];
+    measure q[0] -> c[0];
+
+    if(c==1) u1(pi/2) q[1];
+    h q[1];
+    measure q[1] -> c[1];
+    
+    if(c==1) u1(pi/4) q[2];
+    if(c==2) u1(pi/2) q[2];
+    if(c==3) u1(pi/2+pi/4) q[2];
+    
+    h q[2];
+    measure q[2] -> c[2];
+    
+    if(c==1) u1(pi/1) q[3];
+    if(c==2) u1(pi/2) q[3];
+    if(c==3) u1(pi/4+pi/2) q[3];
+    if(c==4) u1(pi/3) q[3];
+    if(c==5) u1(pi/2+pi/8) q[3];
+    if(c==6) u1(pi/2+pi/4) q[3];
+    if(c==7) u1(pi/2+pi/4+pi/8) q[3];
+    
+    h q[3];
+    measure q[3] -> c[3];
+@endcode
+
+
+### OpenQASM Conversion Tool
+
+QPanda3 provides a set of OpenQASM conversion tools, primarily used for the one-way translation of quantum programs from QProg to OpenQASM. OpenQASM is a quantum assembly language used to represent quantum program information. QProg is a container class for quantum programming and represents the highest unit of a quantum program. The following will provide a detailed introduction to the interface definitions and usage of these conversion tools.
+
+- Translate the OpenQASM instruction set string into a [QProg](@ref pyqpanda3.core.core.QProg) object.
+- Translate the OpenQASM instruction set file into a [QProg](@ref pyqpanda3.core.core.QProg) object.
+
+#### OpenQASM String Translation to QProg
+
+The compilation module of QPanda3 defines [convert_qasm_string_to_qprog](@ref pyqpanda3.intermediate_compiler.intermediate_compiler.convert_qasm_string_to_qprog) for translating the OpenQASM instruction set string into a QProg object.
+
+The following is a simple example of an interface call that demonstrates the process of converting an OpenQASM instruction set string into a quantum program QProg:
+
+@add_toggle_python
+    @snippet samples/python/convert_qasm_string_to_qprog.py  Example of testing QASM String to Qprog
+@end_toggle
+
+The output is as follows:
+@code{.bash}
+Result(stv) of running qprog:
+
+( 0.4013645559739494 , 0.010496566630281416 )
+( 0.2978021782757585 , -0.010496566630281416 )
+( 0.4013645559739494 , 0.010496566630281416 )
+( 0.2978021782757585 , -0.010496566630281416 )
+( 0.2978021782757585 , -0.010496566630281416 )
+( 0.4013645559739494 , 0.010496566630281416 )
+( -0.2978021782757585 , 0.010496566630281416 )
+( -0.4013645559739494 , -0.010496566630281416 )
+
+          ┌──────────────────────────────────────┐               ┌─┐      ┌─┐ 
+q_0:  |0>─┤U3(0.30000000, 0.20000000, 0.10000000)├ ────── ───*── ┤H├──── ─┤M├ 
+          ├─┬────────────────────────────────────┘        ┌──┴─┐ └┬┴┐     └╥┘ 
+q_1:  |0>─┤H├───────────────────────────────────── ───*── ┤CNOT├ ─┤M├─── ──╫─ 
+          └─┘                                      ┌──┴─┐ ├─┬──┘  └╥┘┌─┐   ║  
+q_2:  |0>───────────────────────────────────────── ┤CNOT├ ┤H├─── ──╫─┤M├ ──╫─ 
+                                                   └────┘ └─┘      ║ └╥┘   ║  
+ c :   / ══════════════════════════════════════════════════════════╩══╩════╩═
+                                                                    1  2    0
+@endcode
+
+@note
+For unsupported operation types, errors may occur during the conversion of OpenQASM to a quantum program.
+
+
+#### OpenQASM File Translation to QProg
+
+The compilation module of QPanda3 defines [convert_qasm_file_to_qprog](@ref pyqpanda3.intermediate_compiler.intermediate_compiler.convert_qasm_file_to_qprog) for translating the OpenQASM instruction set file into a QProg object.
+
+The following is a simple example of an interface call that demonstrates the process of converting an OpenQASM instruction set file into a quantum program QProg:
+
+@add_toggle_python
+    @snippet samples/python/convert_qasm_file_to_qprog.py  Example of testing QASM File to Qprog
+@end_toggle
+
+The output is as follows:
+@code{.bash}
+Result(stv) of running qprog:
+
+( 0.4013645559739494 , 0.010496566630281416 )
+( 0.2978021782757585 , -0.010496566630281416 )
+( 0.4013645559739494 , 0.010496566630281416 )
+( 0.2978021782757585 , -0.010496566630281416 )
+( 0.2978021782757585 , -0.010496566630281416 )
+( 0.4013645559739494 , 0.010496566630281416 )
+( -0.2978021782757585 , 0.010496566630281416 )
+( -0.4013645559739494 , -0.010496566630281416 )
+
+          ┌──────────────────────────────────────┐               ┌─┐      ┌─┐ 
+q_0:  |0>─┤U3(0.30000000, 0.20000000, 0.10000000)├ ────── ───*── ┤H├──── ─┤M├ 
+          ├─┬────────────────────────────────────┘        ┌──┴─┐ └┬┴┐     └╥┘ 
+q_1:  |0>─┤H├───────────────────────────────────── ───*── ┤CNOT├ ─┤M├─── ──╫─ 
+          └─┘                                      ┌──┴─┐ ├─┬──┘  └╥┘┌─┐   ║  
+q_2:  |0>───────────────────────────────────────── ┤CNOT├ ┤H├─── ──╫─┤M├ ──╫─ 
+                                                   └────┘ └─┘      ║ └╥┘   ║  
+ c :   / ══════════════════════════════════════════════════════════╩══╩════╩═
+                                                                    1  2    0
+@endcode
+
+@note
+For unsupported operation types, errors may occur during the conversion of OpenQASM to a quantum program.
+
+
+#### QProg to QASM
+
+Convert a QProg object representing a quantum program into its corresponding OpenQASM 2.0 instruction string. It should be noted that the conversion process may involve the decomposition of gates.
+
+Example
+@add_toggle_python
+    @snippet samples/python/convert_qprog_to_qasm_string.py QProg to QASM2.0 String
+@end_toggle
+
+Output
+```bash
+qasm:
+OPENQASM 2.0;
+include "qelib1.inc";
+qreg q[3];
+creg c[0];
+rx(3.1415926000) q[0];
+cx q[0],q[2];
+```
